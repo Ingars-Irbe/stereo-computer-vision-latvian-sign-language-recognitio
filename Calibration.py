@@ -14,8 +14,8 @@ img_points_left = []  # 2D punkti kreisajai kamerai
 img_points_right = [] # 2D punkti labajai kamerai
 
 # Inicializējam kameras
-cap_left = cv2.VideoCapture(2)
-cap_right = cv2.VideoCapture(0)
+cap_left = cv2.VideoCapture(0)
+cap_right = cv2.VideoCapture(2)
 
 # Pārbaudam kameru pieejamību
 if not cap_left.isOpened() or not cap_right.isOpened():
