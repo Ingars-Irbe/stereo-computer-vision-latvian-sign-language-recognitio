@@ -27,7 +27,7 @@ cap_left = cv2.VideoCapture(0)
 cap_right = cv2.VideoCapture(2)
 
 # Iestatām slīdošo loga garumu (piemēram, 50 kadrus)
-maxlen = 50
+maxlen = 30
 window = []  # Saglabā pēdējos 50 kadrus (katrs kadrs ir 63 vērtību vektors)
 gesture_names = {0: "Gesture 1", 1: "Gesture 2"}
 predicted_gesture = "Waiting..."

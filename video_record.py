@@ -50,7 +50,7 @@ while True:
     cv2.imshow('Right Camera', frame_right)
 
     # Pārbauda, vai ir jāsāk ierakstīšana
-    if recording and time.time() - start_time >= 1:
+    if recording:
         # Ģenerē failu nosaukumus, pievienojot žesta marķējumu
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         video_left_filename = os.path.join(output_dir, f"gesture_{current_label}_left_{timestamp}.avi")
@@ -74,13 +74,14 @@ while True:
                 print("⚠️ Kļūda, nolasot video straumi ierakstīšanas laikā.")
                 break
 
-            out_left.write(frame_left)
-            out_right.write(frame_right)
 
             cv2.putText(frame_left, f"Recording Label: {current_label}", (30, 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.imshow('Left Camera', frame_left)
             cv2.imshow('Right Camera', frame_right)
+            
+            out_left.write(frame_left)
+            out_right.write(frame_right)
 
         # Saglabā kalibrācijas failu
         np.savez(calibration_filename, mtx_l=mtx_l, dist_l=dist_l, mtx_r=mtx_r, dist_r=dist_r, R=R, T=T, E=E, F=F)

@@ -10,6 +10,7 @@ from tensorflow.keras.layers import LSTM, Dense, Masking
 import re
 import matplotlib.pyplot as plt
 from tensorflow.keras.optimizers import Adam
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
 # Definē direktoriju, kur ir saglabāti žestu CSV faili
 data_dir = "gesture_samples"
@@ -46,7 +47,7 @@ for filename in os.listdir(data_dir):
 print(f"✅ Iegūti {len(sequences)} secuences.")
 
 # Ja secuences garumi atšķiras, padē tos līdz fiksētam garumam
-maxlen = 80
+maxlen = 30
 X = pad_sequences(sequences, maxlen=maxlen, dtype='float32', padding='post', truncating='post')
 
 # Konvertē etiķetes uz one-hot formu
@@ -56,17 +57,17 @@ y = to_categorical(labels, num_classes=num_classes)
 # Sadala datu kopu apmācībai un validācijai
 X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Veido LSTM modeli
+# Veido LSTM modeli, kā attēlā
 model = Sequential([
-    Masking(mask_value=0., input_shape=(maxlen, 63)),
+    LSTM(64, return_sequences=True, input_shape=(maxlen, X.shape[2])),
+    LSTM(128, return_sequences=True),
     LSTM(64, return_sequences=False),
+    Dense(64, activation='relu'),
     Dense(32, activation='relu'),
     Dense(num_classes, activation='softmax')
 ])
 
-
-
-learning_rate = 0.00005 # Piemēram, lēnāks mācīšanās ātrums
+learning_rate = 0.00005
 model.compile(optimizer=Adam(learning_rate=learning_rate), loss='categorical_crossentropy', metrics=['accuracy'])
 
 model.summary()
@@ -95,6 +96,20 @@ plt.title('Apmācības un validācijas precizitāte')
 
 plt.tight_layout()
 plt.show()
+
+# Prognozē uz validācijas datiem
+y_pred = model.predict(X_val)
+y_pred_classes = np.argmax(y_pred, axis=1)
+y_true = np.argmax(y_val, axis=1)
+
+# Izveido un attēlo pārpratuma matricu
+cm = confusion_matrix(y_true, y_pred_classes)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+disp.plot(cmap=plt.cm.Blues)
+plt.title('Pārpratuma matrica')
+plt.show()
+
+print(classification_report(y_true, y_pred_classes))
 
 # Saglabā modeli
 model.save("gesture_model.h5")
