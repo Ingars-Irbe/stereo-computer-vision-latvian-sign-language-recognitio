@@ -14,7 +14,14 @@ if not os.path.exists(output_dir):
 
 # Inicializē MediaPipe Hands
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.7)
+hands = mp_hands.Hands(
+    model_complexity=1,  # Augstāks modelis uzlabotai precizitātei
+    max_num_hands=2,  # Līdz 2 rokām
+    min_detection_confidence=0.7,
+    min_tracking_confidence=0.7,
+    use_gpu=True  # ✅ Ieslēdz GPU paātrinājumu
+)
+
 
 # Atrodam visus video failus
 video_files = [f for f in os.listdir(video_dir) if f.endswith(".avi")]
