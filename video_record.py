@@ -66,7 +66,7 @@ while True:
 
         record_start = time.time()
 
-        while time.time() - record_start < 3:
+        while time.time() - record_start < 4:
             ret_l, frame_left = cap_left.read()
             ret_r, frame_right = cap_right.read()
 
@@ -75,8 +75,8 @@ while True:
                 break
 
 
-            cv2.putText(frame_left, f"Recording Label: {current_label}", (30, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            # cv2.putText(frame_left, f"Recording Label: {current_label}", (30, 50),
+                        # cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
             cv2.imshow('Left Camera', frame_left)
             cv2.imshow('Right Camera', frame_right)
             

@@ -47,7 +47,7 @@ for filename in os.listdir(data_dir):
 print(f"✅ Iegūti {len(sequences)} secuences.")
 
 # Ja secuences garumi atšķiras, padē tos līdz fiksētam garumam
-maxlen = 80
+maxlen = 90
 padded_sequences = np.zeros((len(sequences), maxlen, 63), dtype=np.float32)
 for i, seq in enumerate(sequences):
     length = min(len(seq), maxlen)

@@ -12,16 +12,9 @@ output_dir = "gesture_samples"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-# Inicializē MediaPipe Hands
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(
-    model_complexity=1,  # Augstāks modelis uzlabotai precizitātei
-    max_num_hands=2,  # Līdz 2 rokām
-    min_detection_confidence=0.7,
-    min_tracking_confidence=0.7,
-    use_gpu=True  # ✅ Ieslēdz GPU paātrinājumu
-)
-
+# Inicializē MediaPipe Holistic
+mp_holistic = mp.solutions.holistic
+holistic = mp_holistic.Holistic(min_detection_confidence=0.7, min_tracking_confidence=0.7)
 
 # Atrodam visus video failus
 video_files = [f for f in os.listdir(video_dir) if f.endswith(".avi")]
@@ -66,12 +59,20 @@ for video_file in video_files:
     cap_left = cv2.VideoCapture(video_path if "left" in video_file else video_other_path)
     cap_right = cv2.VideoCapture(video_other_path if "left" in video_file else video_path)
 
+    # Definē punktu skaitu
+    num_hand_points = 21
+    num_pose_points = 4
+    num_face_points = 5  # Tikai sejas punkti no PoseLandmark
+
     # Sagatavo CSV faila nosaukumu
     csv_filename = os.path.join(output_dir, f"gesture_{gesture_label}_{timestamp}.csv")
 
     with open(csv_filename, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
-        header = ["gesture_id", "timestamp"] + [f"x{i}" for i in range(21)] + [f"y{i}" for i in range(21)] + [f"z{i}" for i in range(21)]
+        header = ["gesture_id", "timestamp"] + \
+                 [f"x{i}" for i in range(num_hand_points + num_pose_points + num_face_points)] + \
+                 [f"y{i}" for i in range(num_hand_points + num_pose_points + num_face_points)] + \
+                 [f"z{i}" for i in range(num_hand_points + num_pose_points + num_face_points)]
         writer.writerow(header)
 
         while cap_left.isOpened() and cap_right.isOpened():
@@ -81,50 +82,79 @@ for video_file in video_files:
             if not ret_l or not ret_r:
                 break
 
+            # Iegūst attēla izmērus
+            h_left, w_left, _ = frame_left.shape
+            h_right, w_right, _ = frame_right.shape
+
             # Konvertē uz RGB
             frame_left_rgb = cv2.cvtColor(frame_left, cv2.COLOR_BGR2RGB)
             frame_right_rgb = cv2.cvtColor(frame_right, cv2.COLOR_BGR2RGB)
 
-            # Apstrādā ar MediaPipe
-            results_left = hands.process(frame_left_rgb)
-            results_right = hands.process(frame_right_rgb)
+            # Apstrādā ar MediaPipe Holistic
+            results_left = holistic.process(frame_left_rgb)
+            results_right = holistic.process(frame_right_rgb)
 
-            if results_left.multi_hand_landmarks and results_right.multi_hand_landmarks:
-                hand_left = results_left.multi_hand_landmarks[0]
-                hand_right = results_right.multi_hand_landmarks[0]
+            points_left, points_right = [], []
 
-                h_left, w_left, _ = frame_left.shape
-                h_right, w_right, _ = frame_right.shape
+            # 🖐️ Iegūst plaukstas punktus (21 punkts)
+            if results_left.right_hand_landmarks and results_right.left_hand_landmarks:
+                hand_left = results_left.right_hand_landmarks
+                hand_right = results_right.left_hand_landmarks
 
-                points_left, points_right = [], []
-
-                for i in range(21):
+                for i in range(num_hand_points):
                     lm_left = hand_left.landmark[i]
                     lm_right = hand_right.landmark[i]
 
-                    x_left, y_left = int(lm_left.x * w_left), int(lm_left.y * h_left)
-                    x_right, y_right = int(lm_right.x * w_right), int(lm_right.y * h_right)
+                    points_left.append([int(lm_left.x * w_left), int(lm_left.y * h_left)])
+                    points_right.append([int(lm_right.x * w_right), int(lm_right.y * h_right)])
 
-                    points_left.append([x_left, y_left])
-                    points_right.append([x_right, y_right])
+            # 💪 Iegūst elkoņa un pleca punktus (4 punkti)
+            if results_left.pose_landmarks and results_right.pose_landmarks:
+                pose_left = results_left.pose_landmarks
+                pose_right = results_right.pose_landmarks
 
-                # Pārvērš punktus par NumPy masīviem
+                pose_indices = [mp_holistic.PoseLandmark.LEFT_ELBOW,
+                                mp_holistic.PoseLandmark.LEFT_SHOULDER,
+                                mp_holistic.PoseLandmark.RIGHT_ELBOW,
+                                mp_holistic.PoseLandmark.RIGHT_SHOULDER]
+
+                for i, index in enumerate(pose_indices):
+                    lm_left = pose_left.landmark[index]
+                    lm_right = pose_right.landmark[index]
+
+                    points_left.append([int(lm_left.x * w_left), int(lm_left.y * h_left)])
+                    points_right.append([int(lm_right.x * w_right), int(lm_right.y * h_right)])
+
+            # 😀 Iegūst tikai `PoseLandmark` sejas punktus (5 punkti)
+            if results_left.pose_landmarks and results_right.pose_landmarks:
+                face_indices = [mp_holistic.PoseLandmark.NOSE,
+                                mp_holistic.PoseLandmark.LEFT_EYE,
+                                mp_holistic.PoseLandmark.RIGHT_EYE,
+                                mp_holistic.PoseLandmark.LEFT_EAR,
+                                mp_holistic.PoseLandmark.RIGHT_EAR]
+
+                for index in face_indices:
+                    lm_left = results_left.pose_landmarks.landmark[index]
+                    lm_right = results_right.pose_landmarks.landmark[index]
+
+                    points_left.append([int(lm_left.x * w_left), int(lm_left.y * h_left)])
+                    points_right.append([int(lm_right.x * w_right), int(lm_right.y * h_right)])
+
+            # 🛠️ Triangulācija: 2D -> 3D pārveide
+            if len(points_left) == len(points_right) and len(points_left) > 0:
                 points_left = np.array(points_left, dtype=np.float32).T
                 points_right = np.array(points_right, dtype=np.float32).T
-
-                # Triangulācija: 2D -> 3D pārveide
                 points_4d_hom = cv2.triangulatePoints(P1, P2, points_left, points_right)
                 points_3d = points_4d_hom[:3] / points_4d_hom[3]
 
-                # Sagatavo ierakstu
+                # Saglabā rezultātus CSV failā
                 frame_timestamp = time.time()
                 row = [gesture_label, frame_timestamp] + points_3d.flatten().tolist()
                 writer.writerow(row)
 
     cap_left.release()
     cap_right.release()
-
     print(f"✅ Saglabāts: {csv_filename}")
 
 cv2.destroyAllWindows()
-print("📝 Roku koordinātas veiksmīgi izvilktas no visiem video.")
+print("📝 Roku, pozu un sejas koordinātas veiksmīgi izvilktas no visiem video.")

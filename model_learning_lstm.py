@@ -47,7 +47,7 @@ for filename in os.listdir(data_dir):
 print(f"✅ Iegūti {len(sequences)} secuences.")
 
 # Ja secuences garumi atšķiras, padē tos līdz fiksētam garumam
-maxlen = 30
+maxlen = 90
 X = pad_sequences(sequences, maxlen=maxlen, dtype='float32', padding='post', truncating='post')
 
 # Konvertē etiķetes uz one-hot formu
@@ -60,7 +60,7 @@ X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_st
 # Veido LSTM modeli, kā attēlā
 model = Sequential([
     LSTM(64, return_sequences=True, input_shape=(maxlen, X.shape[2])),
-    LSTM(128, return_sequences=True),
+    # LSTM(64, return_sequences=True),
     LSTM(64, return_sequences=False),
     Dense(64, activation='relu'),
     Dense(32, activation='relu'),
