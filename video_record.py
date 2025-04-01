@@ -5,8 +5,11 @@ import time
 
 # Izveido direktoriju, ja tāda vēl nav
 output_dir = "recorded_videos"
+calib_out = "calibration_files"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
+if not os.path.exists(calib_out):
+    os.makedirs(calib_out)
 
 # Inicializē kameras
 cap_left = cv2.VideoCapture(0)
@@ -55,7 +58,7 @@ while True:
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         video_left_filename = os.path.join(output_dir, f"gesture_{current_label}_left_{timestamp}.avi")
         video_right_filename = os.path.join(output_dir, f"gesture_{current_label}_right_{timestamp}.avi")
-        calibration_filename = os.path.join(output_dir, f"gesture_{current_label}_calibration_{timestamp}.npz")
+        calibration_filename = os.path.join(calib_out, f"gesture_{current_label}_calibration_{timestamp}.npz")
 
         # Inicializē video rakstītājus
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
@@ -102,8 +105,14 @@ while True:
         print("⏳ Ierakstīšana sāksies pēc 1 sekundes...")
 
     # Maina žesta marķējumu, nospiežot ciparus 0-9
-    if ord('0') <= key <= ord('9'):
+    if ord('0') <= key <= ord('9') or key == ord('i') or key == ord('o')or key == ord('p'):
         current_label = int(chr(key))
+        if key == ord('i'):
+            current_label = int(10)
+        if key == ord('o'):
+            current_label = int(11)
+        if key == ord('p'):
+            current_label = int(12)
         print(f"🔖 Izvēlēts žesta marķējums: {current_label}")
 
     # Beidz programmu, kad nospiests 'q'
